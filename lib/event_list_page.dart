@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'main_layout.dart';
+import 'package:shimmer/shimmer.dart'; // Add shimmer package for skeleton loading
 
 class EventListPage extends StatefulWidget {
   const EventListPage({super.key});
@@ -93,7 +94,6 @@ class _EventListPageState extends State<EventListPage> {
           ),
         ),
         onSubmitted: (value) {
-          // Update the search query only when "Enter" is pressed
           setState(() {
             _searchQuery = value.trim().toLowerCase();
           });
@@ -108,7 +108,7 @@ class _EventListPageState extends State<EventListPage> {
       stream: FirebaseFirestore.instance.collection('events').snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildSkeletonLoader();
         }
         if (snapshot.hasError) {
           return const Center(
@@ -125,7 +125,6 @@ class _EventListPageState extends State<EventListPage> {
               (data['organization'] ?? '').toString().toLowerCase();
           final eventDate = (data['eventDate'] ?? '').toString().toLowerCase();
 
-          // Check if any field matches the search query
           return eventName.contains(_searchQuery) ||
               organization.contains(_searchQuery) ||
               eventDate.contains(_searchQuery);
@@ -143,6 +142,62 @@ class _EventListPageState extends State<EventListPage> {
             var event = events[index];
             return _eventCard(context, event);
           },
+        );
+      },
+    );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        return Shimmer.fromColors(
+          baseColor: Colors.green.shade200,
+          highlightColor: Colors.green.shade50,
+          child: Card(
+            margin: const EdgeInsets.all(16.0),
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 150,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade300,
+                      borderRadius: BorderRadius.circular(8.0),
+                    ),
+                    child: const Icon(
+                      Icons.event,
+                      color: Colors.white,
+                      size: 50,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 20,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade300,
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  Container(
+                    height: 10,
+                    width: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade300,
+                      borderRadius: BorderRadius.circular(4.0),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         );
       },
     );
