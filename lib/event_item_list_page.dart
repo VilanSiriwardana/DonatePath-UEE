@@ -33,25 +33,23 @@ class _EventItemListPageState extends State<EventItemListPage> {
   }
 
   void _addItem() {
-    setState(() {
-      _items.add({
-        'name': '',
-        'category': null,
-        'quantity': 1,
-      });
-      _itemNameControllers.add(TextEditingController());
-      _quantityNotifiers.add(ValueNotifier<int>(1));
+    _items.add({
+      'name': '',
+      'category': null,
+      'quantity': 1,
     });
+    _itemNameControllers.add(TextEditingController());
+    _quantityNotifiers.add(ValueNotifier<int>(1));
+    setState(() {}); // Rebuild the list
   }
 
   void _removeItem(int index) {
-    setState(() {
-      _items.removeAt(index);
-      _itemNameControllers[index].dispose();
-      _quantityNotifiers[index].dispose();
-      _itemNameControllers.removeAt(index);
-      _quantityNotifiers.removeAt(index);
-    });
+    _items.removeAt(index);
+    _itemNameControllers[index].dispose();
+    _quantityNotifiers[index].dispose();
+    _itemNameControllers.removeAt(index);
+    _quantityNotifiers.removeAt(index);
+    setState(() {}); // Rebuild the list after removal
   }
 
   void _updateItem(int index, String key, dynamic value) {
@@ -79,10 +77,8 @@ class _EventItemListPageState extends State<EventItemListPage> {
         return;
       }
 
-      // Calculate total quantity of all items
       final int totalQuantity = _calculateTotalQuantity();
 
-      // Save event details to Firestore
       await FirebaseFirestore.instance.collection('events').add({
         ...widget.eventDetails,
         'items': _items,
@@ -220,25 +216,30 @@ class _EventItemListPageState extends State<EventItemListPage> {
                 },
               ),
               const SizedBox(height: 10),
-              DropdownButtonFormField<String>(
-                value: _items[index]['category'],
-                hint: const Text('Category'),
-                items: _categories.map((category) {
-                  return DropdownMenuItem(
-                    value: category,
-                    child: Text(category),
+              // Isolating the category dropdown in its own rebuild scope
+              StatefulBuilder(
+                builder: (context, setState) {
+                  return DropdownButtonFormField<String>(
+                    value: _items[index]['category'],
+                    hint: const Text('Category'),
+                    items: _categories.map((category) {
+                      return DropdownMenuItem(
+                        value: category,
+                        child: Text(category),
+                      );
+                    }).toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _updateItem(index, 'category', value);
+                      });
+                    },
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10.0),
+                      ),
+                    ),
                   );
-                }).toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _updateItem(index, 'category', value);
-                  });
                 },
-                decoration: InputDecoration(
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                  ),
-                ),
               ),
               const SizedBox(height: 10),
               Row(

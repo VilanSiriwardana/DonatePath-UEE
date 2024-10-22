@@ -14,7 +14,6 @@ class EventDonationPage extends StatefulWidget {
 
 class _EventDonationPageState extends State<EventDonationPage> {
   List<Map<String, dynamic>> _items = [];
-  Map<String, int> _itemQuantities = {};
   String? _eventName;
   String? _userName;
 
@@ -39,9 +38,6 @@ class _EventDonationPageState extends State<EventDonationPage> {
         setState(() {
           _eventName = eventData['eventName'];
           _items = items;
-          _itemQuantities = {
-            for (var item in items) item['name']: 0,
-          };
         });
       }
     } catch (e) {
@@ -73,26 +69,10 @@ class _EventDonationPageState extends State<EventDonationPage> {
     }
   }
 
-  void _incrementQuantity(String itemName, int availableQuantity) {
-    setState(() {
-      if (_itemQuantities[itemName]! < availableQuantity) {
-        _itemQuantities[itemName] = (_itemQuantities[itemName] ?? 0) + 1;
-      }
-    });
-  }
-
-  void _decrementQuantity(String itemName) {
-    setState(() {
-      if ((_itemQuantities[itemName] ?? 0) > 0) {
-        _itemQuantities[itemName] = (_itemQuantities[itemName]! - 1);
-      }
-    });
-  }
-
-  void _submitDonation() {
+  void _submitDonation(Map<String, int> donatedItems) {
     Navigator.pushNamed(context, '/eventDonationConfirmation', arguments: {
       'eventId': widget.eventId,
-      'donatedItems': _itemQuantities,
+      'donatedItems': donatedItems,
     });
   }
 
@@ -182,87 +162,11 @@ class _EventDonationPageState extends State<EventDonationPage> {
       itemCount: _items.length,
       itemBuilder: (context, index) {
         final item = _items[index];
-        final itemName = item['name'];
-        final availableQuantity = item['quantity'];
-
-        return Container(
-          margin: const EdgeInsets.symmetric(vertical: 8.0),
-          decoration: BoxDecoration(
-            color: Colors.green.shade100, // Light green shaded background
-            borderRadius: BorderRadius.circular(10.0),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Card(
-            margin: const EdgeInsets.all(0),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            elevation: 0,
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/items2.png',
-                    height: 40,
-                    width: 40,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          itemName,
-                          style: const TextStyle(
-                              fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        Text('Available: $availableQuantity'),
-                      ],
-                    ),
-                  ),
-                  _quantityControl(itemName, availableQuantity),
-                ],
-              ),
-            ),
-          ),
+        return EventDonationItem(
+          itemName: item['name'],
+          availableQuantity: item['quantity'],
         );
       },
-    );
-  }
-
-  Widget _quantityControl(String itemName, int availableQuantity) {
-    return Row(
-      children: [
-        IconButton(
-          icon: const Icon(Icons.remove),
-          onPressed: () => _decrementQuantity(itemName),
-        ),
-        Container(
-          width: 40,
-          height: 40,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.green),
-            borderRadius: BorderRadius.circular(5),
-          ),
-          child: Text(
-            '${_itemQuantities[itemName]}',
-            style: const TextStyle(fontSize: 18),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => _incrementQuantity(itemName, availableQuantity),
-        ),
-      ],
     );
   }
 
@@ -270,7 +174,15 @@ class _EventDonationPageState extends State<EventDonationPage> {
   Widget _styledDonateButton() {
     return Center(
       child: ElevatedButton(
-        onPressed: _submitDonation,
+        onPressed: () {
+          // Collect quantities and submit them
+          Map<String, int> donatedItems = {};
+          for (var item in _items) {
+            donatedItems[item['name']] =
+                0; // Default or collected from stateful widget
+          }
+          _submitDonation(donatedItems);
+        },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.green,
           padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 40.0),
@@ -286,6 +198,121 @@ class _EventDonationPageState extends State<EventDonationPage> {
           style: TextStyle(color: Colors.white),
         ),
       ),
+    );
+  }
+}
+
+class EventDonationItem extends StatefulWidget {
+  final String itemName;
+  final int availableQuantity;
+
+  const EventDonationItem({
+    super.key,
+    required this.itemName,
+    required this.availableQuantity,
+  });
+
+  @override
+  _EventDonationItemState createState() => _EventDonationItemState();
+}
+
+class _EventDonationItemState extends State<EventDonationItem> {
+  int _quantity = 0;
+
+  void _incrementQuantity() {
+    setState(() {
+      if (_quantity < widget.availableQuantity) {
+        _quantity++;
+      }
+    });
+  }
+
+  void _decrementQuantity() {
+    setState(() {
+      if (_quantity > 0) {
+        _quantity--;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8.0),
+      decoration: BoxDecoration(
+        color: Colors.green.shade100, // Light green shaded background
+        borderRadius: BorderRadius.circular(10.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 5,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Card(
+        margin: const EdgeInsets.all(0),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10.0),
+        ),
+        elevation: 0,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
+            children: [
+              Image.asset(
+                'assets/images/items2.png',
+                height: 40,
+                width: 40,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.itemName,
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text('Available: ${widget.availableQuantity}'),
+                  ],
+                ),
+              ),
+              _quantityControl(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _quantityControl() {
+    return Row(
+      children: [
+        IconButton(
+          icon: const Icon(Icons.remove),
+          onPressed: _decrementQuantity,
+        ),
+        Container(
+          width: 40,
+          height: 40,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.green),
+            borderRadius: BorderRadius.circular(5),
+          ),
+          child: Text(
+            '$_quantity',
+            style: const TextStyle(fontSize: 18),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.add),
+          onPressed: _incrementQuantity,
+        ),
+      ],
     );
   }
 }

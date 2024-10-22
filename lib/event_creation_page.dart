@@ -3,19 +3,17 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart'; // For date formatting
 import 'main_layout.dart';
 
-class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key});
+class EventCreationPage extends StatefulWidget {
+  const EventCreationPage({super.key});
 
   @override
-  _CreateEventPageState createState() => _CreateEventPageState();
+  _EventCreationPageState createState() => _EventCreationPageState();
 }
 
-class _CreateEventPageState extends State<CreateEventPage> {
+class _EventCreationPageState extends State<EventCreationPage> {
   final TextEditingController _eventNameController = TextEditingController();
   final TextEditingController _eventDescriptionController =
       TextEditingController();
-  final TextEditingController _eventDateController = TextEditingController();
-  final TextEditingController _eventTimeController = TextEditingController();
 
   String? _selectedOrganization;
   List<String> _organizations = []; // Placeholder for organizations
@@ -47,54 +45,28 @@ class _CreateEventPageState extends State<CreateEventPage> {
     }
   }
 
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2101),
-    );
-    if (pickedDate != null) {
-      setState(() {
-        _eventDateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
-      });
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? pickedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.now(),
-    );
-    if (pickedTime != null) {
-      setState(() {
-        _eventTimeController.text = pickedTime.format(context);
-      });
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return MainLayout(
       selectedIndex: 2,
       headerText: 'Create Event',
       profileImage: '',
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0), // Add top padding      
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _bannerSection(),
-            const SizedBox(height: 20),
-            _formContainer(),
-            const SizedBox(height: 30), // Spacing between form and button
-            _styledButton(context), // Moved outside the form container
-          ],
+      child: Padding(
+        padding: const EdgeInsets.only(top: 16.0), // Add top padding
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bannerSection(),
+              const SizedBox(height: 20),
+              _formContainer(),
+              const SizedBox(height: 30), // Spacing between form and button
+              _styledButton(context), // Moved outside the form container
+            ],
+          ),
         ),
       ),
-            ),
     );
   }
 
@@ -157,7 +129,7 @@ class _CreateEventPageState extends State<CreateEventPage> {
         children: [
           _styledTextField('Event Name', _eventNameController),
           const SizedBox(height: 20),
-          _styledDropdownField(),
+          _styledDropdownField(), // Keep the dropdown inside main form
           const SizedBox(height: 20),
           _styledTextField(
             'Event Description',
@@ -165,9 +137,9 @@ class _CreateEventPageState extends State<CreateEventPage> {
             maxLines: 3,
           ),
           const SizedBox(height: 20),
-          _dateField(context),
+          _DateFieldWidget(), // Isolated date picker
           const SizedBox(height: 20),
-          _timeField(context),
+          _TimeFieldWidget(), // Isolated time picker
         ],
       ),
     );
@@ -195,75 +167,35 @@ class _CreateEventPageState extends State<CreateEventPage> {
 
   // Styled dropdown field for organization selection
   Widget _styledDropdownField() {
-    return DropdownButtonFormField<String>(
-      value: _organizations.contains(_selectedOrganization)
-          ? _selectedOrganization
-          : null,
-      hint: const Text('Select Organization'),
-      items: _organizations.map((organization) {
-        return DropdownMenuItem(
-          value: organization,
-          child: Text(organization),
+    return StatefulBuilder(
+      builder: (context, setState) {
+        return DropdownButtonFormField<String>(
+          value: _selectedOrganization,
+          hint: const Text('Select Organization'),
+          items: _organizations.map((organization) {
+            return DropdownMenuItem(
+              value: organization,
+              child: Text(organization),
+            );
+          }).toList(),
+          onChanged: (value) {
+            setState(() {
+              _selectedOrganization = value;
+            });
+          },
+          decoration: InputDecoration(
+            labelText: 'Select Organization',
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(10.0),
+              borderSide: BorderSide.none,
+            ),
+            contentPadding:
+                const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
+          ),
         );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedOrganization = value;
-        });
       },
-      decoration: InputDecoration(
-        labelText: 'Select Organization',
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(vertical: 15, horizontal: 10),
-      ),
-    );
-  }
-
-  // Date field with icon button
-  Widget _dateField(BuildContext context) {
-    return TextField(
-      controller: _eventDateController,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: 'Event Date',
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.calendar_today, color: Colors.green),
-          onPressed: () => _selectDate(context),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide.none,
-        ),
-      ),
-    );
-  }
-
-  // Time field with icon button
-  Widget _timeField(BuildContext context) {
-    return TextField(
-      controller: _eventTimeController,
-      readOnly: true,
-      decoration: InputDecoration(
-        labelText: 'Event Time',
-        suffixIcon: IconButton(
-          icon: const Icon(Icons.access_time, color: Colors.green),
-          onPressed: () => _selectTime(context),
-        ),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10.0),
-          borderSide: BorderSide.none,
-        ),
-      ),
     );
   }
 
@@ -274,8 +206,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
         onPressed: () {
           if (_eventNameController.text.isNotEmpty &&
               _eventDescriptionController.text.isNotEmpty &&
-              _eventDateController.text.isNotEmpty &&
-              _eventTimeController.text.isNotEmpty &&
               _selectedOrganization != null) {
             Navigator.pushNamed(
               context,
@@ -283,8 +213,6 @@ class _CreateEventPageState extends State<CreateEventPage> {
               arguments: {
                 'eventName': _eventNameController.text,
                 'eventDescription': _eventDescriptionController.text,
-                'eventDate': _eventDateController.text,
-                'eventTime': _eventTimeController.text,
                 'organization': _selectedOrganization!,
               },
             );
@@ -309,6 +237,94 @@ class _CreateEventPageState extends State<CreateEventPage> {
         child: const Text(
           'List Items',
           style: TextStyle(color: Colors.white),
+        ),
+      ),
+    );
+  }
+}
+
+// Date field widget with its own state
+class _DateFieldWidget extends StatefulWidget {
+  @override
+  __DateFieldWidgetState createState() => __DateFieldWidgetState();
+}
+
+class __DateFieldWidgetState extends State<_DateFieldWidget> {
+  final TextEditingController _eventDateController = TextEditingController();
+
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (pickedDate != null) {
+      setState(() {
+        _eventDateController.text = DateFormat('yyyy-MM-dd').format(pickedDate);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _eventDateController,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: 'Event Date',
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.calendar_today, color: Colors.green),
+          onPressed: () => _selectDate(context),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide.none,
+        ),
+      ),
+    );
+  }
+}
+
+// Time field widget with its own state
+class _TimeFieldWidget extends StatefulWidget {
+  @override
+  __TimeFieldWidgetState createState() => __TimeFieldWidgetState();
+}
+
+class __TimeFieldWidgetState extends State<_TimeFieldWidget> {
+  final TextEditingController _eventTimeController = TextEditingController();
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? pickedTime = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.now(),
+    );
+    if (pickedTime != null) {
+      setState(() {
+        _eventTimeController.text = pickedTime.format(context);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: _eventTimeController,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: 'Event Time',
+        suffixIcon: IconButton(
+          icon: const Icon(Icons.access_time, color: Colors.green),
+          onPressed: () => _selectTime(context),
+        ),
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10.0),
+          borderSide: BorderSide.none,
         ),
       ),
     );

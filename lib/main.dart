@@ -19,7 +19,7 @@ import 'my_feedback.dart';
 import 'volunteer_dashboard.dart';
 import 'volunteer_register.dart';
 import 'event_list_page.dart';
-import 'create_event_page.dart';
+import 'event_creation_page.dart';
 import 'event_item_list_page.dart';
 import 'event_details_page.dart';
 import 'event_donation_page.dart';
@@ -79,7 +79,7 @@ class MyApp extends StatelessWidget {
             '/donate_page': (context) => DonatePage(),
             '/all_items': (context) => AllItemsPage(),
             '/eventsList': (context) => const EventListPage(),
-            '/createEvent': (context) => const CreateEventPage(),
+            '/createEvent': (context) => const EventCreationPage(),
             '/eventItemList': (context) {
               // Retrieve arguments passed to this route safely
               final args = ModalRoute.of(context)?.settings.arguments;
